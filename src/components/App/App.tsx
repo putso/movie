@@ -28,7 +28,7 @@ class App extends React.Component<object, state> {
     super(props);
     this.state = {
       movies: [],
-      isLoading: false,
+      isLoading: true,
       isError: false,
       isOnline: true,
       query: undefined,

@@ -7,6 +7,7 @@ import { addRatedMovie, getFilms, getGenres, getRatedMovie } from '@/api/film';
 import { Movie, tab } from '@/type';
 import { debounce } from 'lodash';
 import GenresContext from '../GernesContext';
+import { getMoviesfromLS, getRatedMoviefromLS } from '@/api/localStorage';
 type state = {
   movies: Movie[];
   isLoading: boolean;
@@ -34,7 +35,7 @@ class App extends React.Component<object, state> {
       page: 1,
       totalPage: 1,
       session: '',
-      ratedMovie: {},
+      ratedMovie: getRatedMoviefromLS(),
       genresMap: {},
       tab: 'Search',
     };
@@ -46,6 +47,7 @@ class App extends React.Component<object, state> {
     this.updateQuery = this.updateQuery.bind(this);
     this.debounceRequest = this.debounceRequest.bind(this);
     this.debounceRequest = debounce(this.debounceRequest, 500);
+    this.forceUpdate = this.forceUpdate.bind(this);
   }
   updatePage(page: number) {
     this.setState(() => ({ page }));
@@ -85,7 +87,8 @@ class App extends React.Component<object, state> {
     this.setState(() => ({ isLoading: true, isError: false }));
     try {
       const movieResponse = await getRatedMovie();
-      const movieList = movieResponse.results;
+      let movieList: Movie[] = movieResponse.results;
+      if (!movieList.length) movieList = getMoviesfromLS();
       this.setState(() => ({ movies: movieList, isLoading: false, totalPage: movieResponse.total_results }));
     } catch (e) {
       this.setState(() => ({ isError: true, isLoading: false }));
@@ -109,6 +112,7 @@ class App extends React.Component<object, state> {
       this.setOnline();
     });
   }
+  forceUpdate(): void {}
   componentDidCatch() {
     this.setState(() => ({ isError: true }));
   }
@@ -141,12 +145,12 @@ class App extends React.Component<object, state> {
             totalPage={this.state.totalPage}
             page={this.state.page}
             updatePage={this.updatePage}
-            loadMovie={this.loadMovie}
             isOnline={this.state.isOnline}
             isError={this.state.isError}
             movies={this.state.movies || []}
             isLoading={isLoading}
             setUserRating={this.setUserRating}
+            forceUpdate={() => this.forceUpdate()}
           ></CardList>
         </GenresContext.Provider>
       </div>

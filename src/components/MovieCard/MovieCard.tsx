@@ -4,6 +4,7 @@ import style from './MovieCard.module.scss';
 import { Movie } from '../../type';
 import { format, parseISO } from 'date-fns';
 import GenresContext from '../GernesContext';
+import { addMovietoLS } from '@/api/localStorage';
 function shortenText(str: string, limit = 70) {
   let len = 0;
   let shortText;
@@ -71,7 +72,14 @@ const MovieCard = ({
           <div className={style.description}>
             <p>{description}</p>
             <div className={style.star}>
-              <Rate onChange={(value) => setUserRating(value, movie.id)} allowHalf value={(userRate || 0) / 2} />
+              <Rate
+                onChange={(value) => {
+                  addMovietoLS({ ...movie, userRate: value });
+                  setUserRating(value, movie.id);
+                }}
+                allowHalf
+                value={(userRate || 0) / 2}
+              />
             </div>
           </div>
         </article>

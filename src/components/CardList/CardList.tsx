@@ -8,18 +8,19 @@ const CardList = ({
   isLoading,
   isError,
   isOnline,
-  loadMovie,
+  // loadMovie,
   updatePage,
   totalPage,
   page,
   setUserRating,
   ratedMovie,
+  forceUpdate,
 }: {
+  forceUpdate: () => void;
   page: number;
   movies: Movie[];
   isLoading: boolean;
   isError: boolean;
-  loadMovie: () => void;
   isOnline: boolean;
   updatePage: (page: number) => void;
   totalPage: number;
@@ -41,7 +42,7 @@ const CardList = ({
           message="Что-то пошло не так"
           type="error"
           action={
-            <Button size="small" type="primary" onClick={loadMovie}>
+            <Button size="small" type="primary" onClick={forceUpdate}>
               Обновить страницу
             </Button>
           }

@@ -7,12 +7,10 @@ type RatedMOvie = Movie & {
   userRate: number;
 };
 export function getMoviesfromLS(): RatedMOvie[] {
-  console.log(JSON.parse(localStorage.getItem(key) || '[]'));
   return JSON.parse(localStorage.getItem(key) || '[]');
 }
 
 export function addMovietoLS(movie: RatedMOvie) {
-  console.log('addMovietoLS');
   const movies = getMoviesfromLS();
   const map = movies.reduce((map, item) => {
     map.set(item.id, item);

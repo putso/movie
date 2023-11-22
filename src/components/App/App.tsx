@@ -1,134 +1,155 @@
 import React from 'react';
-import './App.scss';
-import NewTaskForm from '@/components/NewTaskForm';
-import TaskList from '@/components/TaskList';
-import Footer from '@/components/Footer';
-import { filter, iTask, taskHandlers } from '@/type';
-import TasksFilter from '@/components/TasksFilter';
-
+import style from './App.module.scss';
+import Header from '../Header';
+import Search from '../Search';
+import CardList from '../CardList';
+import { addRatedMovie, getFilms, getGenres, getRatedMovie } from '@/api/film';
+import { Movie, tab } from '@/type';
+import { debounce } from 'lodash';
+import GenresContext from '../GernesContext';
 type state = {
-  tasks: iTask[];
-  filter: filter;
-};
-class App extends React.Component {
-  state: state = {
-    tasks: [],
-    filter: 'all',
+  movies: Movie[];
+  isLoading: boolean;
+  isError: boolean;
+  isOnline: boolean;
+  query?: string;
+  totalPage: number;
+  page: number;
+  session: string;
+  ratedMovie: {
+    [n: number]: number;
   };
+  genresMap: { [n: number]: string };
+  tab: tab;
+};
+class App extends React.Component<object, state> {
   constructor(props: object) {
     super(props);
-    this.addTask = this.addTask.bind(this);
-    this.changeFilter = this.changeFilter.bind(this);
-    this.switchStateTask = this.switchStateTask.bind(this);
-    this.changeTaskText = this.changeTaskText.bind(this);
-    this.deleteTask = this.deleteTask.bind(this);
-    this.setFilter = this.setFilter.bind(this);
-    this.getFilteredTask = this.getFilteredTask.bind(this);
-    this.clearCompleted = this.clearCompleted.bind(this);
-    this.countActiveTask = this.countActiveTask.bind(this);
-  }
-  addTask(value: string) {
-    const newTask: iTask = {
-      value,
-      completed: false,
-      created: Date.now(),
+    this.state = {
+      movies: [],
+      isLoading: false,
+      isError: false,
+      isOnline: true,
+      query: undefined,
+      page: 1,
+      totalPage: 1,
+      session: '',
+      ratedMovie: {},
+      genresMap: {},
+      tab: 'Search',
     };
+    this.componentDidCatch = this.componentDidMount.bind(this);
+    this.loadMovie = this.loadMovie.bind(this);
+    this.updatePage = this.updatePage.bind(this);
+    this.setOffline = this.setOffline.bind(this);
+    this.setOnline = this.setOnline.bind(this);
+    this.updateQuery = this.updateQuery.bind(this);
+    this.debounceRequest = this.debounceRequest.bind(this);
+    this.debounceRequest = debounce(this.debounceRequest, 500);
+  }
+  updatePage(page: number) {
+    this.setState(() => ({ page }));
+  }
+  async loadMovie() {
+    if (!this.state.isOnline) {
+      this.setState(() => ({ movies: [] }));
+      return;
+    }
+    const { query = 'return', page = 1 } = { query: this.state.query, page: this.state.page };
+    this.setState(() => ({ isLoading: true, isError: false }));
+    try {
+      const movieResponse = await getFilms(query, page);
+      const movieList = movieResponse.results;
+      this.setState(() => ({ movies: movieList, isLoading: false, totalPage: movieResponse.total_results }));
+    } catch (e) {
+      this.setState(() => ({ isError: true }));
+    }
+  }
+  setOnline() {
     this.setState(() => {
-      return {
-        tasks: [...this.state.tasks, newTask],
-      };
+      return { isOnline: true };
     });
   }
-  changeFilter(value: filter) {
-    this.setState(() => {
-      return {
-        filter: value,
-      };
+  componentDidUpdate(_: object, prevState: Readonly<state>): void {
+    if (!this.state.isOnline) return;
+    if ((prevState.isOnline != this.state.isOnline, prevState.page != this.state.page)) {
+      this.loadMovie();
+      return;
+    }
+    if (prevState.query != this.state.query) this.debounceRequest();
+    if (prevState.tab == this.state.tab) return;
+    if (this.state.tab == 'Search') this.loadMovie();
+    if (this.state.tab == 'Rated') this.loadRatedMovie();
+  }
+  loadRatedMovie = async () => {
+    this.setState(() => ({ isLoading: true, isError: false }));
+    try {
+      const movieResponse = await getRatedMovie();
+      const movieList = movieResponse.results;
+      this.setState(() => ({ movies: movieList, isLoading: false, totalPage: movieResponse.total_results }));
+    } catch (e) {
+      this.setState(() => ({ isError: true, isLoading: false }));
+    }
+  };
+  setOffline() {
+    this.setState(() => ({ isOnline: false }));
+  }
+  loadGenres = async () => {
+    const genres = await getGenres();
+    this.setState(() => ({ genresMap: genres }));
+  };
+  async componentDidMount() {
+    await this.loadGenres();
+    this.loadMovie();
+
+    window.addEventListener('offline', () => {
+      this.setOffline();
+    });
+    window.addEventListener('online', () => {
+      this.setOnline();
     });
   }
-  switchStateTask(task: iTask) {
-    this.setState(() => {
-      return {
-        tasks: this.state.tasks.map((el) => {
-          if (task == el) {
-            el = { ...el };
-            el.completed = !el.completed;
-          }
-          return el;
-        }),
-      };
-    });
+  componentDidCatch() {
+    this.setState(() => ({ isError: true }));
   }
-  changeTaskText(task: iTask, value: string) {
-    this.setState(() => {
-      return {
-        tasks: this.state.tasks.map((el) => {
-          if (el === task) {
-            el = { ...el };
-            el.value = value;
-          }
-          return el;
-        }),
-      };
-    });
+  debounceRequest() {
+    this.loadMovie();
   }
-  deleteTask(task: iTask) {
-    this.setState(() => {
-      return {
-        tasks: this.state.tasks.filter((el) => el != task),
-      };
-    });
+  updateQuery(query: string) {
+    this.setState(() => ({ query }));
   }
-  setFilter(filter: filter) {
-    this.setState(() => ({
-      filter,
-    }));
-  }
-  getFilteredTask(filter: filter) {
-    return this.state.tasks.filter((task) => {
-      if (filter === 'all') return true;
-      const isCompleted = filter == 'completed';
-      return isCompleted === task.completed;
-    });
-  }
-  clearCompleted() {
-    this.setState(() => {
-      const unCompetedTasks = this.getFilteredTask('active');
-      return {
-        tasks: unCompetedTasks,
-      };
-    });
-  }
-  countActiveTask() {
-    return this.state.tasks.reduce((acc, item) => (!item.completed ? acc + 1 : acc), 0);
-  }
+  setUserRating = async (rate: number, id: number) => {
+    rate *= 2;
+    this.setState(({ ratedMovie }) => ({ ratedMovie: { ...ratedMovie, [id]: rate } }));
+    await addRatedMovie(rate, id);
+  };
+  setTab = (tab: tab) => {
+    this.setState(() => ({ tab }));
+  };
+
   render() {
-    const taskHandlers: taskHandlers = {
-      deleteTask: this.deleteTask,
-      changeTaskText: this.changeTaskText,
-      switchStateTask: this.switchStateTask,
-      addTask: this.addTask,
-    };
-    const filteredTask = this.state.tasks.filter((task) => {
-      const filter = this.state.filter;
-      if (filter === 'all') return true;
-      const isCompleted = filter == 'completed';
-      return isCompleted === task.completed;
-    });
-    const itemsLeft = this.countActiveTask();
+    const isLoading = this.state.isLoading;
+    const tab = this.state.tab;
+
     return (
-      <main className="todoapp">
-        <header>
-          <h1>todos</h1>
-        </header>
-        <section className="main">
-          <NewTaskForm addTask={this.addTask} />
-          <TaskList tasks={filteredTask} taskHandlers={taskHandlers} />
-          <Footer clearCompleted={this.clearCompleted} itemsLeft={itemsLeft}>
-            <TasksFilter setFilter={this.setFilter} filter={this.state.filter} />
-          </Footer>
-        </section>
-      </main>
+      <div className={style.container}>
+        <Header setTab={this.setTab}></Header>
+        {tab == 'Search' && <Search onChange={this.updateQuery} query={this.state.query || ''}></Search>}
+        <GenresContext.Provider value={this.state.genresMap}>
+          <CardList
+            ratedMovie={this.state.ratedMovie}
+            totalPage={this.state.totalPage}
+            page={this.state.page}
+            updatePage={this.updatePage}
+            loadMovie={this.loadMovie}
+            isOnline={this.state.isOnline}
+            isError={this.state.isError}
+            movies={this.state.movies || []}
+            isLoading={isLoading}
+            setUserRating={this.setUserRating}
+          ></CardList>
+        </GenresContext.Provider>
+      </div>
     );
   }
 }

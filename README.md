@@ -1,1 +1,1 @@
-deploy: https://movie-putso.vercel.app/
+deploy: https://movie-putso.vercel.app?_vercel_share=Ai0byqxv5lVqg6Kg6YlqTEbZKL66aWDm

@@ -1,1 +1,1 @@
-deploy:  https://movie-sigma-green.vercel.app
+deploy: https://movie-putso.vercel.app/

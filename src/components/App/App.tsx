@@ -31,7 +31,7 @@ class App extends React.Component<object, state> {
       isLoading: true,
       isError: false,
       isOnline: true,
-      query: undefined,
+      query: '',
       page: 1,
       totalPage: 1,
       session: '',
@@ -57,7 +57,7 @@ class App extends React.Component<object, state> {
       this.setState(() => ({ movies: [] }));
       return;
     }
-    const { query = 'return', page = 1 } = { query: this.state.query, page: this.state.page };
+    const { query, page = 1 } = { query: this.state.query || 'return', page: this.state.page };
     this.setState(() => ({ isLoading: true, isError: false }));
     try {
       const movieResponse = await getFilms(query, page);
@@ -120,10 +120,10 @@ class App extends React.Component<object, state> {
     this.loadMovie();
   }
   updateQuery(query: string) {
+    query = query.trim();
     this.setState(() => ({ query }));
   }
   setUserRating = async (rate: number, id: number) => {
-    rate *= 2;
     this.setState(({ ratedMovie }) => ({ ratedMovie: { ...ratedMovie, [id]: rate } }));
     await addRatedMovie(rate, id);
   };

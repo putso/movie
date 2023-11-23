@@ -2,33 +2,9 @@ import { Rate, Space, Tag } from 'antd';
 import React from 'react';
 import style from './MovieCard.module.scss';
 import { Movie } from '../../type';
-import { format, parseISO } from 'date-fns';
 import GenresContext from '../GernesContext';
 import { addMovietoLS } from '@/api/localStorage';
-function shortenText(str: string, limit = 70) {
-  let len = 0;
-  let shortText;
-  const shortWorlds = [];
-  const worlds = str.split(' ');
-  for (let i = 0; i < worlds.length; i++) {
-    if (len + worlds[i].length >= limit) break;
-    shortWorlds.push(worlds[i]);
-    len += worlds[i].length;
-  }
-  shortText = shortWorlds.join(' ');
-  if (shortWorlds.length < worlds.length) shortText += '...';
-  return shortText;
-}
-function formatData(str: string) {
-  let result;
-  try {
-    const date = parseISO(str);
-    result = format(date, 'd MMM, yyyy');
-  } catch (e) {
-    result = '';
-  }
-  return result;
-}
+import { formatData, shortenText } from '@/helpers';
 function getColor(rate: number) {
   if (rate < 3) return style.color3;
   if (rate < 5) return style.color5;
@@ -54,7 +30,7 @@ const MovieCard = ({
     <GenresContext.Consumer>
       {(GenresContext) => (
         <article className={style.card}>
-          <img src="" alt="" className={style.image} />
+          <img src="" alt="" srcSet="assets/Placeholder.png" className={style.image} />
           <header className={style.header}>
             <div className={style.flex}>
               <h2 className={style.title}>{title}</h2>
@@ -77,8 +53,12 @@ const MovieCard = ({
                   addMovietoLS({ ...movie, userRate: value });
                   setUserRating(value, movie.id);
                 }}
+                count={10}
                 allowHalf
-                value={(userRate || 0) / 2}
+                value={userRate || 0}
+                style={{
+                  fontSize: 17,
+                }}
               />
             </div>
           </div>

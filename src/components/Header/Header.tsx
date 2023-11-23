@@ -1,6 +1,6 @@
 import { Tabs, TabsProps } from 'antd';
 import React from 'react';
-import './Header.scss';
+import style from './Header.module.scss';
 import { tab } from '@/type';
 const Heades = ({ setTab }: { setTab: (value: tab) => void }) => {
   const items: TabsProps['items'] = [
@@ -17,7 +17,7 @@ const Heades = ({ setTab }: { setTab: (value: tab) => void }) => {
   ];
   return (
     <div>
-      <div className="container123">
+      <div className={style.container}>
         <Tabs defaultActiveKey={'Search'} centered items={items} onChange={(key: string) => setTab(key as tab)} />
       </div>
     </div>
